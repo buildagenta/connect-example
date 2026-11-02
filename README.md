@@ -31,13 +31,13 @@ Agenta never sees the customer's credentials.
 
 ## Environment
 
-Server side only — an `A2ANET_API_KEY` that reaches the browser is a leaked
+Server side only — an `AGENTA_API_KEY` that reaches the browser is a leaked
 credential:
 
 | Variable         | What it is                                                          |
 | ---------------- | ------------------------------------------------------------------- |
-| `A2ANET_API_KEY` | A standard user API key, minted at <https://app.buildagenta.com/api-keys> |
-| `A2ANET_API_URL` | `https://app.buildagenta.com/api/v1`                                      |
+| `AGENTA_API_KEY` | A standard user API key, minted at <https://app.buildagenta.com/api-keys> |
+| `AGENTA_API_URL` | `https://app.buildagenta.com/api/v1`                                      |
 
 ## Your Customer Sign-In URL
 
