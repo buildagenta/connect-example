@@ -37,8 +37,8 @@ const post = (body: unknown): Request =>
     });
 
 beforeEach(() => {
-    process.env.A2ANET_API_URL = "https://app.buildagenta.com/api/v1";
-    process.env.A2ANET_API_KEY = "a2anet_test";
+    process.env.AGENTA_API_URL = "https://app.buildagenta.com/api/v1";
+    process.env.AGENTA_API_KEY = "a2anet_test";
 });
 
 afterEach(() => {

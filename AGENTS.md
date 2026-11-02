@@ -29,7 +29,7 @@ so it can name the chat account before anyone clicks Connect.
 
 ## 2. Add the environment variables
 
-`A2ANET_API_KEY` and `A2ANET_API_URL`, as described in `README.md`. Server-side
+`AGENTA_API_KEY` and `AGENTA_API_URL`, as described in `README.md`. Server-side
 only. In a framework that prefixes public variables (`NEXT_PUBLIC_`, `VITE_`),
 neither takes that prefix.
 

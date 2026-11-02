@@ -65,10 +65,10 @@ export async function redeemLinkToken(
 ): Promise<ConnectResult> {
     let response: Response;
     try {
-        response = await fetch(`${env("A2ANET_API_URL")}/customer-links`, {
+        response = await fetch(`${env("AGENTA_API_URL")}/customer-links`, {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${env("A2ANET_API_KEY")}`,
+                Authorization: `Bearer ${env("AGENTA_API_KEY")}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ linkToken, customerId, ...values }),
@@ -100,10 +100,10 @@ export async function redeemLinkToken(
 export async function previewLinkToken(linkToken: string): Promise<LinkDescription | null> {
     let response: Response;
     try {
-        response = await fetch(`${env("A2ANET_API_URL")}/customer-links/preview`, {
+        response = await fetch(`${env("AGENTA_API_URL")}/customer-links/preview`, {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${env("A2ANET_API_KEY")}`,
+                Authorization: `Bearer ${env("AGENTA_API_KEY")}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ linkToken }),
