@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026-present A2A Net <hello@a2anet.com>
+// SPDX-FileCopyrightText: 2026-present Agenta <hello@buildagenta.com>
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -69,12 +69,12 @@ export function statusContent(status: ConnectStatus, platform: string): StatusCo
 }
 
 /**
- * Names the chat account a link would bind to, as specifically as A2A Net can.
+ * Names the chat account a link would bind to, as specifically as Agenta can.
  *
  * Show this next to who the visitor is signed in as. Someone who was sent a
  * link they did not ask for is reading the only line on the page that can tell
  * them so.
- * @param description What your server got back from A2A Net, if anything.
+ * @param description What your server got back from Agenta, if anything.
  * @returns A phrase such as "Slack (@alice in Acme Corp)".
  */
 export function identityLabel(description: LinkDescription | undefined): string {

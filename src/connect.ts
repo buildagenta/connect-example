@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026-present A2A Net <hello@a2anet.com>
+// SPDX-FileCopyrightText: 2026-present Agenta <hello@buildagenta.com>
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,7 +6,7 @@
  * `POST /connect` — the endpoint that turns a Slack or Teams user into one
  * of your customers.
  *
- * The link token arrives in the browser, from the Connect button A2A Net posted
+ * The link token arrives in the browser, from the Connect button Agenta posted
  * to an unlinked user. It names that platform user and nothing else; who they are
  * in *your* product is a question only you can answer, which is why this exchange
  * happens on your server, against your session, with your API key.
@@ -24,7 +24,7 @@ export type ConnectResult = { connected: true } | { connected: false; reason: Co
 /**
  * Who a link token names, for the page to show before anyone clicks Connect.
  *
- * Absent names are normal: a platform only tells A2A Net what it will, and Teams
+ * Absent names are normal: a platform only tells Agenta what it will, and Teams
  * will not name a tenant at all.
  */
 export interface LinkDescription {
@@ -52,7 +52,7 @@ const env = (name: string): string => {
 };
 
 /**
- * Redeems a link token against A2A Net, binding it to one of your customers.
+ * Redeems a link token against Agenta, binding it to one of your customers.
  * @param linkToken The `?token=` the Connect button carried into the browser.
  * @param customerId Your own identifier for the signed-in user.
  * @param values Per-customer variables and secrets for this customer's runs.
@@ -87,7 +87,7 @@ export async function redeemLinkToken(
 }
 
 /**
- * Asks A2A Net who a link token names, without redeeming it.
+ * Asks Agenta who a link token names, without redeeming it.
  *
  * Show what this returns. A link token is a bearer credential: whoever holds the
  * URL can click Connect, so an attacker only has to get their own Connect link
@@ -134,7 +134,7 @@ const STATUS_BY_REASON: Record<ConnectFailure, number> = {
 const MESSAGE_BY_REASON: Record<ConnectFailure, string> = {
     invalid: "This connection link is invalid or has expired",
     used: "This connection link has already been used",
-    unreachable: "A2A Net could not be reached",
+    unreachable: "Agenta could not be reached",
 };
 
 const json = (body: unknown, status: number): Response =>

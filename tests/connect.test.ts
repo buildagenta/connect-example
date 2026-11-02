@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026-present A2A Net <hello@a2anet.com>
+// SPDX-FileCopyrightText: 2026-present Agenta <hello@buildagenta.com>
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -37,7 +37,7 @@ const post = (body: unknown): Request =>
     });
 
 beforeEach(() => {
-    process.env.A2ANET_API_URL = "https://app.a2anet.com/api/v1";
+    process.env.A2ANET_API_URL = "https://app.buildagenta.com/api/v1";
     process.env.A2ANET_API_KEY = "a2anet_test";
 });
 
@@ -67,7 +67,7 @@ describe("redeemLinkToken", () => {
         });
     });
 
-    test("reports A2A Net being unreachable", async () => {
+    test("reports Agenta being unreachable", async () => {
         globalThis.fetch = (async () => {
             throw new Error("network");
         }) as unknown as typeof fetch;
@@ -97,7 +97,7 @@ describe("redeemLinkToken", () => {
 describe("handleConnectRequest", () => {
     const authenticated = async (): Promise<string> => "customer-1";
 
-    test("refuses an unauthenticated caller before reaching A2A Net", async () => {
+    test("refuses an unauthenticated caller before reaching Agenta", async () => {
         respondWith(200);
         const handler = handleConnectRequest(async () => null);
         expect((await handler(post({ token: "token" }))).status).toBe(401);
@@ -117,7 +117,7 @@ describe("handleConnectRequest", () => {
         expect(await response.json()).toEqual({ connected: true });
     });
 
-    test("passes A2A Net's refusal through as its own status", async () => {
+    test("passes Agenta's refusal through as its own status", async () => {
         respondWith(409);
         const handler = handleConnectRequest(authenticated);
         expect((await handler(post({ token: "token" }))).status).toBe(409);
@@ -145,12 +145,12 @@ describe("previewLinkToken", () => {
         });
     });
 
-    test.each([400, 404, 500])("has nothing to show when A2A Net answers %i", async (status) => {
+    test.each([400, 404, 500])("has nothing to show when Agenta answers %i", async (status) => {
         respondWith(status);
         expect(await previewLinkToken("token")).toBeNull();
     });
 
-    test("has nothing to show when A2A Net is unreachable", async () => {
+    test("has nothing to show when Agenta is unreachable", async () => {
         globalThis.fetch = (async () => {
             throw new Error("network");
         }) as unknown as typeof fetch;
@@ -161,7 +161,7 @@ describe("previewLinkToken", () => {
 describe("handlePreviewRequest", () => {
     const authenticated = async (): Promise<string> => "customer-1";
 
-    test("refuses an unauthenticated caller before reaching A2A Net", async () => {
+    test("refuses an unauthenticated caller before reaching Agenta", async () => {
         respondWith(200, DESCRIPTION);
         const handler = handlePreviewRequest(async () => null);
         expect((await handler(post({ token: "token" }))).status).toBe(401);
@@ -186,7 +186,7 @@ describe("handlePreviewRequest", () => {
         });
     });
 
-    test("reports a token A2A Net will not preview as invalid", async () => {
+    test("reports a token Agenta will not preview as invalid", async () => {
         respondWith(400);
         const handler = handlePreviewRequest(authenticated);
         expect((await handler(post({ token: "token" }))).status).toBe(400);
