@@ -1,6 +1,6 @@
 # Applying this example
 
-Instructions for a coding agent adding A2A Net account linking to an existing web
+Instructions for a coding agent adding Agenta account linking to an existing web
 app. Read `README.md` first for the flow.
 
 ## 1. Add the endpoint
@@ -41,7 +41,7 @@ and the page share a path and the URL is easy to say out loud.
 Wire its props to the app's own auth: `loading` and `isAuthenticated` from
 whatever hook the app already uses, and `signIn(returnTo)` to whatever starts the
 sign-in flow. Read `token` and `platform` from the query string with the app's own
-router — A2A Net sends both, so nothing has to decode a token in the browser.
+router — Agenta sends both, so nothing has to decode a token in the browser.
 
 Then restyle it. It renders bare `<main>`, `<h1>` and `<button>` so the states are
 readable; use the app's own layout, logo and components. What must survive the
@@ -57,7 +57,7 @@ holds a bearer token), add the header to the `fetch` in `connect`.
 
 ## 4. Set the Customer Sign-In URL
 
-On the agent's Publish page at <https://app.a2anet.com>, in the last step of Slack
+On the agent's Publish page at <https://app.buildagenta.com>, in the last step of Slack
 or Teams setup, set `https://app.example.com/connect`. It must be https.
 Until it is set, the agent runs as its owner rather than as your customers.
 

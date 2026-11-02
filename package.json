@@ -12,21 +12,21 @@
         "test:coverage": "bun test --coverage"
     },
     "keywords": [
-        "a2anet",
+        "agenta",
         "agents",
         "slack",
         "teams"
     ],
-    "author": "A2A Net <hello@a2anet.com>",
+    "author": "Agenta <hello@buildagenta.com>",
     "license": "Apache-2.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/a2anet/a2anet-connect-example.git"
+        "url": "https://github.com/buildagenta/connect-example.git"
     },
     "bugs": {
-        "url": "https://github.com/a2anet/a2anet-connect-example/issues"
+        "url": "https://github.com/buildagenta/connect-example/issues"
     },
-    "homepage": "https://github.com/a2anet/a2anet-connect-example#readme",
+    "homepage": "https://github.com/buildagenta/connect-example#readme",
     "devDependencies": {
         "@biomejs/biome": "^1.9.0",
         "@types/bun": "latest",

@@ -1,4 +1,4 @@
-# A2A Net Connect Example
+# Agenta Connect Example
 
 This is an example implementation of the `/connect` endpoint, which allows
 you to authenticate Slack, Teams, and Copilot users with your product.
@@ -9,18 +9,18 @@ makes it run as each of your customers instead.
 ## The flow
 
 1. An unlinked user messages the agent — or runs its command, clicks one of its
-   buttons, or reacts to point it at something. A2A Net posts a **Connect** button
+   buttons, or reacts to point it at something. Agenta posts a **Connect** button
 2. The button opens your Customer Sign-In URL with a ten-minute, single-use token
    as `?token=`, and the app they came from as `?platform=`
 3. Your page signs the visitor in the way your product already does
 4. Your backend asks `POST /api/v1/customer-links/preview` who the token names,
    and your page shows it next to who they are signed in as
 5. Your backend `POST`s the token and your own identifier for that user to
-   `POST /api/v1/customer-links`, with your A2A Net API key
-6. A2A Net stores the link. It is durable — only the token was short-lived — and
+   `POST /api/v1/customer-links`, with your Agenta API key
+6. Agenta stores the link. It is durable — only the token was short-lived — and
    the user's next message runs as that customer
 
-A2A Net never sees the customer's credentials.
+Agenta never sees the customer's credentials.
 
 ## Files
 
@@ -36,8 +36,8 @@ credential:
 
 | Variable         | What it is                                                          |
 | ---------------- | ------------------------------------------------------------------- |
-| `A2ANET_API_KEY` | A standard user API key, minted at <https://app.a2anet.com/api-keys> |
-| `A2ANET_API_URL` | `https://app.a2anet.com/api/v1`                                      |
+| `A2ANET_API_KEY` | A standard user API key, minted at <https://app.buildagenta.com/api-keys> |
+| `A2ANET_API_URL` | `https://app.buildagenta.com/api/v1`                                      |
 
 ## Your Customer Sign-In URL
 
@@ -54,7 +54,7 @@ https://app.example.com/connect
 | --------------------- | -------------------------------------- | ---------------------------- |
 | `400 invalid_request` | Expired, tampered with, or not a token | Ask the agent for a new link |
 | `409 link_token_used` | The link was already redeemed          | Ask for a new one if needed  |
-| `502`                 | A2A Net could not be reached           | Try again                    |
+| `502`                 | Agenta could not be reached           | Try again                    |
 
 ## Two things to keep
 
