@@ -29,12 +29,16 @@ const DESCRIPTION = {
     expiresAt: "2026-01-01T00:10:00.000Z",
 };
 
-const post = (body: unknown): Request =>
+const post = (body: unknown, contentType = "application/json"): Request =>
     new Request("https://example.com/connect", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        headers: { "Content-Type": contentType },
+        body: typeof body === "string" ? body : JSON.stringify(body),
     });
+
+// All a cross-site form can send. `text/plain` carries JSON as well as any,
+// which is how a form on another site would redeem its own token here.
+const FORM_TYPES = ["text/plain", "application/x-www-form-urlencoded", "multipart/form-data"];
 
 beforeEach(() => {
     process.env.AGENTA_API_URL = "https://app.buildagenta.com/api/v1";
@@ -109,6 +113,32 @@ describe("handleConnectRequest", () => {
         expect((await handler(post({}))).status).toBe(400);
     });
 
+    test.each(FORM_TYPES)("refuses a %s post before asking who is signed in", async (type) => {
+        let reached = false;
+        globalThis.fetch = (async () => {
+            reached = true;
+            return new Response(null, { status: 200 });
+        }) as unknown as typeof fetch;
+        let authenticated = false;
+        const handler = handleConnectRequest(async () => {
+            authenticated = true;
+            return "customer-1";
+        });
+
+        const response = await handler(post(JSON.stringify({ token: "attacker-token" }), type));
+
+        expect(response.status).toBe(415);
+        expect(authenticated).toBe(false);
+        expect(reached).toBe(false);
+    });
+
+    test("accepts JSON with a charset", async () => {
+        respondWith(200);
+        const handler = handleConnectRequest(authenticated);
+        const response = await handler(post({ token: "token" }, "application/json; charset=utf-8"));
+        expect(response.status).toBe(200);
+    });
+
     test("answers 200 once the link is made", async () => {
         respondWith(200);
         const handler = handleConnectRequest(authenticated);
@@ -171,6 +201,20 @@ describe("handlePreviewRequest", () => {
         respondWith(200, DESCRIPTION);
         const handler = handlePreviewRequest(authenticated);
         expect((await handler(post({}))).status).toBe(400);
+    });
+
+    test.each(FORM_TYPES)("refuses a %s post", async (type) => {
+        let reached = false;
+        globalThis.fetch = (async () => {
+            reached = true;
+            return new Response(null, { status: 200 });
+        }) as unknown as typeof fetch;
+        const handler = handlePreviewRequest(authenticated);
+
+        const response = await handler(post(JSON.stringify({ token: "token" }), type));
+
+        expect(response.status).toBe(415);
+        expect(reached).toBe(false);
     });
 
     test("answers the description, and never the API key that fetched it", async () => {

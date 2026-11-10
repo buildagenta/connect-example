@@ -18,11 +18,17 @@ Koa), drop `handleConnectRequest` and call `redeemLinkToken(token, customerId)`
 from a handler written in that framework's own style. `redeemLinkToken` is the
 part that matters; the wrapper is convenience.
 
-Two things this endpoint must not do, because they are the whole security model:
+Three things this endpoint must not do, because they are the whole security model:
 
 - Do not accept a `customerId` from the request body. The server decides who the
   caller is; a body-supplied id lets anyone link a chat account to anyone
 - Do not expose the endpoint unauthenticated
+- Do not accept a body that is not `Content-Type: application/json`. Refuse it
+  with 415 before reading the session. Parsing whatever arrives is not enough:
+  a `text/plain` form on another site can send a body that parses as JSON, and
+  would redeem its own token as whoever is signed in here. The handlers do this;
+  a handler you write in your framework's own style has to as well, and so does
+  your preview route
 
 Mount `handlePreviewRequest` at `POST /connect/preview`. The page calls it first
 so it can name the chat account before anyone clicks Connect.

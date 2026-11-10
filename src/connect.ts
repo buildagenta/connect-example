@@ -144,6 +144,21 @@ const json = (body: unknown, status: number): Response =>
     });
 
 /**
+ * Whether a request says its body is JSON.
+ *
+ * Checked before anything else, and the reason is CSRF. An HTML form can only
+ * send urlencoded, multipart, or plain text, but a `text/plain` form can carry
+ * a body that parses as JSON perfectly well — `{"token":"…","x":"="}` — so
+ * parsing whatever arrives would let a page on another site redeem *its own*
+ * token as whoever is signed in here, with their cookies, and never show them
+ * the preview. Requiring the header is what a form cannot do.
+ */
+const isJson = (request: Request): boolean =>
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() === "application/json";
+
+const NOT_JSON = { error: "Send the token as JSON, with Content-Type: application/json" };
+
+/**
  * Builds the route handler.
  * @param authenticate Your own session check, returning the customer id.
  * @returns A handler to mount at `POST /connect`.
@@ -152,6 +167,8 @@ export function handleConnectRequest(
     authenticate: Authenticate,
 ): (request: Request) => Promise<Response> {
     return async (request: Request): Promise<Response> => {
+        if (!isJson(request)) return json(NOT_JSON, 415);
+
         const customerId = await authenticate(request);
         if (!customerId) return json({ error: "Unauthorized" }, 401);
 
@@ -181,6 +198,7 @@ export function handlePreviewRequest(
     authenticate: Authenticate,
 ): (request: Request) => Promise<Response> {
     return async (request: Request): Promise<Response> => {
+        if (!isJson(request)) return json(NOT_JSON, 415);
         if (!(await authenticate(request))) return json({ error: "Unauthorized" }, 401);
 
         const body = (await request.json().catch(() => ({}))) as { token?: string };
