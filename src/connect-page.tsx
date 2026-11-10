@@ -6,8 +6,8 @@
  * The page the Connect button opens.
  *
  * It reads `?token=`, makes sure the visitor is signed in to your product, asks
- * your server who the token names, and posts the token back to your own
- * `/connect`. Everything it renders is one of five states, because those
+ * your server who the token names, and only then offers to post the token back to
+ * your own `/connect`. Everything it renders is one of five states, because those
  * are the only five things that can happen and each one needs a person to be
  * told something different.
  *
@@ -21,8 +21,9 @@ import type { LinkDescription } from "./connect.js";
 /**
  * Where the visitor is.
  *
- * `ready` is the only state with a button. The other four are terminal, and the
- * three that are not `failed` all end the same way: go back to the chat app.
+ * `ready` offers the button once the preview has named the account, and `failed`
+ * offers it again if Connect itself failed; a preview that failed has nothing to
+ * retry against. The other three all end the same way: go back to the chat app.
  */
 export type ConnectStatus = "ready" | "connected" | "invalid" | "used" | "failed";
 
@@ -37,8 +38,17 @@ const APP_NAMES: Record<LinkDescription["surface"], string> = {
     copilot: "Copilot",
 };
 
-/** What to call the chat app before the description has said which one it is. */
+/** What to call the chat app when nothing has said which one it is. */
 const ANY_APP = "Slack, Teams, or Copilot";
+
+/**
+ * What to call the chat app the visitor came from.
+ * @param surface The preview's `surface`, or Agenta's `?platform=` before the preview has answered.
+ * @returns "Slack", "Teams", or "Copilot", or all three when it is not one of them.
+ */
+export function appName(surface: string | undefined): string {
+    return APP_NAMES[surface as LinkDescription["surface"]] ?? ANY_APP;
+}
 
 /**
  * What to say in each terminal state.
@@ -74,24 +84,29 @@ export function statusContent(status: ConnectStatus, platform: string): StatusCo
  * Show this next to who the visitor is signed in as. Someone who was sent a
  * link they did not ask for is reading the only line on the page that can tell
  * them so.
- * @param description What your server got back from Agenta, if anything.
- * @returns A phrase such as "Slack (@alice in Acme Corp)".
+ * @param description What your server got back from Agenta.
+ * @returns A phrase such as "Slack (@alice in Acme Corp)" or "Teams (Alice Smith)".
  */
-export function identityLabel(description: LinkDescription | undefined): string {
-    if (!description) return ANY_APP;
-    const inside = [
-        description.platformUserName && `@${description.platformUserName}`,
-        description.workspaceName && `in ${description.workspaceName}`,
-    ]
-        .filter(Boolean)
-        .join(" ");
-    const app = APP_NAMES[description.surface];
+export function identityLabel(description: LinkDescription): string {
+    const { surface, platformUserName, workspaceName } = description;
+    // As each app shows a person: Slack as "@" and their display name, Teams and
+    // Copilot as the name alone.
+    const who =
+        platformUserName && (surface === "slack" ? `@${platformUserName}` : platformUserName);
+    const inside = [who, workspaceName && `in ${workspaceName}`].filter(Boolean).join(" ");
+    const app = APP_NAMES[surface];
     return inside ? `${app} (${inside})` : app;
 }
 
 export interface ConnectPageProps {
     /** The `?token=` query parameter, however your router hands it over. */
     token: string;
+    /**
+     * The `?platform=` query parameter Agenta sends alongside the token. Only names
+     * the app in messages shown before the preview has answered: anyone can edit a
+     * URL, so who is being connected comes from the preview alone.
+     */
+    platform?: string;
     /** Whether your own session is loading. */
     loading: boolean;
     /** Whether the visitor is signed in to your product. */
@@ -105,6 +120,7 @@ export interface ConnectPageProps {
 /** Links the signed-in visitor's account to the chat identity that sent them here. */
 export function ConnectPage({
     token,
+    platform,
     loading,
     isAuthenticated,
     signIn,
@@ -142,8 +158,8 @@ export function ConnectPage({
         );
     }, [isAuthenticated, loading, signIn, status, token]);
 
-    // Asked for before the button is offered, so nobody clicks Connect without
-    // having been told what they are connecting.
+    // The button is not offered until this answers, so nobody clicks Connect
+    // without having been told what they are connecting.
     useEffect(() => {
         if (!token || !isAuthenticated) return;
         let live = true;
@@ -157,9 +173,11 @@ export function ConnectPage({
                 if (!live) return;
                 if (response.ok) setDescription((await response.json()) as LinkDescription);
                 else if (response.status === 400) setStatus("invalid");
+                else setStatus("failed");
             } catch {
-                // Leaves the button offered against the generic noun. A dead
-                // token is caught again on redeem, where it costs nothing.
+                // Not a reason to offer the button anyway: without the account's
+                // name there is nothing for the visitor to check.
+                if (live) setStatus("failed");
             }
         })();
         return () => {
@@ -191,8 +209,8 @@ export function ConnectPage({
         }
     };
 
-    const target = identityLabel(description);
-    const content = statusContent(status, description ? APP_NAMES[description.surface] : ANY_APP);
+    const app = appName(description?.surface ?? platform);
+    const content = statusContent(status, app);
     if (content) {
         return (
             <main>
@@ -208,7 +226,7 @@ export function ConnectPage({
         return (
             <main>
                 <h1>This link has expired</h1>
-                <p>Return to {ANY_APP} and ask the agent for a new link</p>
+                <p>Return to {app} and ask the agent for a new link</p>
             </main>
         );
     }
@@ -226,11 +244,25 @@ export function ConnectPage({
         );
     }
 
+    if (!description) {
+        return (
+            <main>
+                <h1>Connect your account</h1>
+                {status === "failed" ? (
+                    <p>We could not check this connection. Please try again.</p>
+                ) : (
+                    <p>Checking this connection…</p>
+                )}
+            </main>
+        );
+    }
+
     return (
         <main>
             <h1>Connect your account</h1>
             <p>
-                Connect your account{accountName ? ` (${accountName})` : ""} to {target}
+                Connect your account{accountName ? ` (${accountName})` : ""} to{" "}
+                {identityLabel(description)}
             </p>
             {status === "failed" && <p>We could not connect the account. Please try again.</p>}
             <button type="button" onClick={() => void connect()} disabled={submitting}>

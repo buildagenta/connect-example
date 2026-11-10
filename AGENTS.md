@@ -49,6 +49,9 @@ restyle:
 
 - The five states, and the wording that sends people back to the chat app. A
   person on this page came from Slack or Teams and needs to be told to go back
+- No Connect button until the preview has named the chat account, including
+  when the preview fails. That name is the only check a person can make against
+  a link somebody else sent them
 - The `noindex,nofollow` and `no-referrer` meta tags. The URL carries a token
 - Sign-in starting on arrival rather than behind a second click
 

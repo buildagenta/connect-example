@@ -128,33 +128,76 @@ describe("previewLinkToken", () => {
     test("names the chat account the token would bind to", async () => {
         respondWith(200, DESCRIPTION);
         expect(await previewLinkToken("token")).toEqual({
-            agentName: "Bookings",
-            surface: "slack",
-            workspaceName: "Acme Corp",
-            platformUserName: "alice",
+            described: true,
+            description: {
+                agentName: "Bookings",
+                surface: "slack",
+                workspaceName: "Acme Corp",
+                platformUserName: "alice",
+            },
         });
     });
 
     test("leaves out names the platform did not give", async () => {
         respondWith(200, { agentName: "Bookings", surface: "teams" });
         expect(await previewLinkToken("token")).toEqual({
-            agentName: "Bookings",
-            surface: "teams",
-            workspaceName: undefined,
-            platformUserName: undefined,
+            described: true,
+            description: {
+                agentName: "Bookings",
+                surface: "teams",
+                workspaceName: undefined,
+                platformUserName: undefined,
+            },
         });
     });
 
-    test.each([400, 404, 500])("has nothing to show when Agenta answers %i", async (status) => {
-        respondWith(status);
-        expect(await previewLinkToken("token")).toBeNull();
+    test("reports an expired or tampered token as invalid", async () => {
+        respondWith(400);
+        expect(await previewLinkToken("token")).toEqual({ described: false, reason: "invalid" });
     });
 
-    test("has nothing to show when Agenta is unreachable", async () => {
+    // A bad API key, or an agent the key does not own or that is gone: none of
+    // them is the link's fault, so none of them may read as an expired link.
+    test.each([401, 403, 404, 500])(
+        "reports Agenta answering %i as unreachable",
+        async (status) => {
+            respondWith(status);
+            expect(await previewLinkToken("token")).toEqual({
+                described: false,
+                reason: "unreachable",
+            });
+        },
+    );
+
+    test("reports Agenta being unreachable", async () => {
         globalThis.fetch = (async () => {
             throw new Error("network");
         }) as unknown as typeof fetch;
-        expect(await previewLinkToken("token")).toBeNull();
+        expect(await previewLinkToken("token")).toEqual({
+            described: false,
+            reason: "unreachable",
+        });
+    });
+
+    test.each([
+        ["no surface", { agentName: "Bookings" }],
+        ["an unknown surface", { agentName: "Bookings", surface: "irc" }],
+        ["no agent name", { surface: "slack" }],
+    ])("reports a description with %s as unreachable", async (_label, body) => {
+        respondWith(200, body);
+        expect(await previewLinkToken("token")).toEqual({
+            described: false,
+            reason: "unreachable",
+        });
+    });
+
+    test("reports a body that is not JSON as unreachable", async () => {
+        globalThis.fetch = (async () =>
+            new Response("not json", { status: 200 })) as unknown as typeof fetch;
+        expect(await previewLinkToken("token")).toEqual({
+            described: false,
+            reason: "unreachable",
+        });
     });
 });
 
@@ -190,5 +233,13 @@ describe("handlePreviewRequest", () => {
         respondWith(400);
         const handler = handlePreviewRequest(authenticated);
         expect((await handler(post({ token: "token" }))).status).toBe(400);
+    });
+
+    test("reports Agenta refusing your API key as a 502, not an invalid link", async () => {
+        respondWith(401);
+        const handler = handlePreviewRequest(authenticated);
+        const response = await handler(post({ token: "token" }));
+        expect(response.status).toBe(502);
+        expect(await response.json()).toEqual({ error: "Agenta could not be reached" });
     });
 });
