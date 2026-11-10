@@ -36,7 +36,10 @@ describe("appName", () => {
         expect(appName("copilot")).toBe("Copilot");
     });
 
-    test.each([undefined, "", "irc"])("names all three apps for %p", (surface) => {
-        expect(appName(surface)).toBe("Slack, Teams, or Copilot");
-    });
+    test.each([undefined, "", "irc", "constructor", "toString"])(
+        "names all three apps for %p",
+        (surface) => {
+            expect(appName(surface)).toBe("Slack, Teams, or Copilot");
+        },
+    );
 });

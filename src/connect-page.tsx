@@ -47,7 +47,11 @@ const ANY_APP = "Slack, Teams, or Copilot";
  * @returns "Slack", "Teams", or "Copilot", or all three when it is not one of them.
  */
 export function appName(surface: string | undefined): string {
-    return APP_NAMES[surface as LinkDescription["surface"]] ?? ANY_APP;
+    // Compared one by one rather than looked up, so "?platform=constructor"
+    // names all three apps, not a function from the object's prototype.
+    return surface === "slack" || surface === "teams" || surface === "copilot"
+        ? APP_NAMES[surface]
+        : ANY_APP;
 }
 
 /**
@@ -153,10 +157,12 @@ export function ConnectPage({
         if (status !== "ready" || !token || loading || isAuthenticated) return;
         if (signInStarted.current) return;
         signInStarted.current = true;
-        signIn(`/connect?${new URLSearchParams({ token }).toString()}`).catch(() =>
-            setStatus("failed"),
-        );
-    }, [isAuthenticated, loading, signIn, status, token]);
+        // Back to this same link, `platform` included, so the messages that come
+        // before the preview still name the app.
+        const returnTo = new URLSearchParams({ token });
+        if (platform) returnTo.set("platform", platform);
+        signIn(`/connect?${returnTo.toString()}`).catch(() => setStatus("failed"));
+    }, [isAuthenticated, loading, platform, signIn, status, token]);
 
     // The button is not offered until this answers, so nobody clicks Connect
     // without having been told what they are connecting.
