@@ -22,6 +22,18 @@ export type ConnectFailure = "invalid" | "used" | "unreachable";
 export type ConnectResult = { connected: true } | { connected: false; reason: ConnectFailure };
 
 /**
+ * Why there is nothing to show for a link token.
+ *
+ * No `used`: the preview reads the token, not whether it has been redeemed, so a
+ * spent link still previews until it expires. Only redeeming it says so.
+ */
+export type PreviewFailure = "invalid" | "unreachable";
+
+export type PreviewResult =
+    | { described: true; description: LinkDescription }
+    | { described: false; reason: PreviewFailure };
+
+/**
  * Who a link token names, for the page to show before anyone clicks Connect.
  *
  * Absent names are normal: a platform only tells Agenta what it will, and Teams
@@ -86,6 +98,11 @@ export async function redeemLinkToken(
     return { connected: false, reason: "unreachable" };
 }
 
+const SURFACES: ReadonlySet<string> = new Set(["slack", "teams", "copilot"]);
+
+const optionalName = (value: unknown): string | undefined =>
+    typeof value === "string" ? value : undefined;
+
 /**
  * Asks Agenta who a link token names, without redeeming it.
  *
@@ -95,9 +112,9 @@ export async function redeemLinkToken(
  * and indistinguishable from the real thing. Naming the chat account the link
  * would bind to is the one part of the flow the victim can recognise as wrong.
  * @param linkToken The `?token=` the Connect button carried into the browser.
- * @returns Who the token names, or null when it is expired, spent, or not yours.
+ * @returns Who the token names, or why there is nothing to show.
  */
-export async function previewLinkToken(linkToken: string): Promise<LinkDescription | null> {
+export async function previewLinkToken(linkToken: string): Promise<PreviewResult> {
     let response: Response;
     try {
         response = await fetch(`${env("AGENTA_API_URL")}/customer-links/preview`, {
@@ -109,16 +126,33 @@ export async function previewLinkToken(linkToken: string): Promise<LinkDescripti
             body: JSON.stringify({ linkToken }),
         });
     } catch {
-        return null;
+        return { described: false, reason: "unreachable" };
     }
-    if (!response.ok) return null;
 
-    const body = (await response.json()) as LinkDescription;
+    // Only a 400 is about the link: expired, tampered with, or simply wrong. A 401
+    // is your API key, and a 403 or 404 an agent that key does not own or that no
+    // longer exists. None of those is the person's fault, and calling the link
+    // expired would only send them for a new one that fails the same way.
+    if (response.status === 400) return { described: false, reason: "invalid" };
+    if (!response.ok) return { described: false, reason: "unreachable" };
+
+    let body: Record<string, unknown>;
+    try {
+        body = (await response.json()) as Record<string, unknown>;
+    } catch {
+        return { described: false, reason: "unreachable" };
+    }
+    if (typeof body.agentName !== "string" || !SURFACES.has(body.surface as string)) {
+        return { described: false, reason: "unreachable" };
+    }
     return {
-        agentName: body.agentName,
-        surface: body.surface,
-        workspaceName: body.workspaceName,
-        platformUserName: body.platformUserName,
+        described: true,
+        description: {
+            agentName: body.agentName,
+            surface: body.surface as LinkDescription["surface"],
+            workspaceName: optionalName(body.workspaceName),
+            platformUserName: optionalName(body.platformUserName),
+        },
     };
 }
 
@@ -205,8 +239,8 @@ export function handlePreviewRequest(
         const linkToken = body.token?.trim();
         if (!linkToken) return json({ error: "A connection token is required" }, 400);
 
-        const description = await previewLinkToken(linkToken);
-        if (!description) return json({ error: MESSAGE_BY_REASON.invalid }, 400);
-        return json(description, 200);
+        const result = await previewLinkToken(linkToken);
+        if (result.described) return json(result.description, 200);
+        return json({ error: MESSAGE_BY_REASON[result.reason] }, STATUS_BY_REASON[result.reason]);
     };
 }

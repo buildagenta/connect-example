@@ -14,7 +14,8 @@ makes it run as each of your customers instead.
    as `?token=`, and the app they came from as `?platform=`
 3. Your page signs the visitor in the way your product already does
 4. Your backend asks `POST /api/v1/customer-links/preview` who the token names,
-   and your page shows it next to who they are signed in as
+   and your page shows it next to who they are signed in as. Only then does it
+   offer Connect
 5. Your backend `POST`s the token and your own identifier for that user to
    `POST /api/v1/customer-links`, with your Agenta API key
 6. Agenta stores the link. It is durable — only the token was short-lived — and
@@ -50,11 +51,20 @@ https://app.example.com/connect
 
 ## What can go wrong
 
-| Status                | What happened                          | What to tell them            |
-| --------------------- | -------------------------------------- | ---------------------------- |
-| `400 invalid_request` | Expired, tampered with, or not a token | Ask the agent for a new link |
-| `409 link_token_used` | The link was already redeemed          | Ask for a new one if needed  |
-| `502`                 | Agenta could not be reached           | Try again                    |
+| Agenta answers        | What happened                                    | What to tell them            |
+| --------------------- | ------------------------------------------------ | ---------------------------- |
+| `400 invalid_request` | Expired, tampered with, or not a token           | Ask the agent for a new link |
+| `409 link_token_used` | The link was already redeemed                    | Ask for a new one if needed  |
+| `401` to `404`        | Your API key or plan, or an agent it doesn't own | Try again later              |
+| No answer, or a `5xx` | Agenta could not be reached                      | Try again                    |
+
+Your endpoints answer `502` for the last two rows. Neither is the person's
+link, so neither may read as an expired one: they would only ask the agent for
+a new link that fails the same way.
+
+Only redeeming says a link was used. The preview reads the token, not whether
+it has been redeemed, so a spent link still names its account until it
+expires.
 
 ## Two things to keep
 
@@ -69,7 +79,8 @@ which the attacker's messages run as them. Every request in that sequence is
 first-party, correctly signed, and impossible to tell from the real thing at the
 server. The only place it can be caught is on the page, by a person reading
 "Connect your account (you@corp.com) to Slack (@attacker in Some Other Corp)".
-That is what `preview` is for.
+That is what `preview` is for, and why the page offers no Connect button until
+it has answered, or when it could not.
 
 **Take a JSON body, not a form post.** An HTML form can only send urlencoded,
 multipart, or plain text bodies, so a server that requires `application/json`
