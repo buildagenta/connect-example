@@ -73,10 +73,13 @@ That is what `preview` is for.
 
 **Take a JSON body, not a form post.** An HTML form can only send urlencoded,
 multipart, or plain text bodies, so a server that requires `application/json`
-cannot be driven by a form on someone else's site. Combined with a `SameSite=Lax`
-session cookie, that is what stops another origin redeeming a link as whoever is
-signed in — no CSRF token needed. If you change `/connect` to accept a form
-post, add one.
+cannot be driven by a form on someone else's site. *Requires* means checking
+the `Content-Type` header, not just parsing the body: a `text/plain` form can
+send `{"token":"…","x":"="}`, which parses as JSON fine. Both handlers refuse
+anything else with 415 before they read the session. Combined with a
+`SameSite=Lax` session cookie, that is what stops another origin redeeming a
+link as whoever is signed in — no CSRF token needed. If you change `/connect` to
+accept a form post, add one.
 
 ## Running the checks
 
